@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+	<head>
+		<meta charset="utf-8">
+
+		<title>Netty 시작하기 (4)</title>
+
+		<meta name="description" content="자바 환경의 고성능 비동기 네트워크 프레임워크인 Netty를 이해하고, 간단한 예제를 만들어봅니다.">
+		<meta name="author" content="김대현">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/aewol2.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section class="cover">
+					<h1>Netty 시작하기 (4)</h1>
+					<h3>풍부한 코덱과 웹소켓</h3>
+					<p class="name">
+						<a href="http://hatemogi.com">김대현</a><br/>
+						<a href="http://twitter.com/hatemagi">@hatemogi</a>
+					</p>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+					## Netty 시작하기: 마지막 시간
+					* Netty의 풍부한 코덱
+					* 웹소켓 서버 구현
+
+					### 실습과 예제
+					* 웹기반 채팅 서버 개발
+					</script>
+				</section>
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+						# Netty의 풍부한 코덱
+
+						> io.netty.handler.codec.*
+
+						* 텍스트 처리
+						* 압축 처리
+						* 다양한 프로토콜 지원
+						* 코덱 개발시 이용하는 클래스들
+						* <i class="fa fa-bolt"></i> 코덱도 채널핸들러입니다
+						</script>
+					</section>
+					<section class="small-code">
+						<h2>
+							<small>지난 시간의</small> ChatServer.java
+						</h2>
+						<pre><code class="java" data-trim contenteditable>
+public final class ChatServer {
+  public static void main(String[] args) throws Exception {
+    NettyStartupUtil.runServer(8030, new ChannelInitializer&lt;SocketChannel&gt;() {
+      @Override
+      protected void initChannel(SocketChannel ch) throws Exception {
+        ch.pipeline()
+          .addLast(new LineBasedFrameDecoder(1024, true, true))
+          .addLast(new StringDecoder(CharsetUtil.UTF_8),
+                   new StringEncoder(CharsetUtil.UTF_8))
+          .addLast(new ChatMessageCodec(),
+                   new LoggingHandler(LogLevel.INFO))
+          .addLast(new ChatServerHandler());
+      }
+    });
+  }
+}
+						</code></pre>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## 텍스트 처리
+
+						* StringEncoder, StringDecoder
+						* Base64Encoder, Base64Decoder
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## 압축 처리
+
+						* Zlib
+						* Snappy
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## 다양한 프로토콜 지원
+
+						* ProtoBuf
+						* HTTP, SPDY, WebSocket
+						* Socks
+						* HTTP/2 (개발버전)
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## 코덱 개발용
+
+						* LineBasedFrameDecoder
+						* ByteToMessageCodec
+						* MessageToMessageCodec
+						* FixedLengthFrameDecoder
+						</script>
+					</section>
+
+				</section>
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+						# 실습: 웹소켓 기반 채팅 서버
+
+						> ```ChannelPipeline```을 잘 조립해서 세번째 시간에 개발한 ```ChatServerHandler```를 그대로 다시 사용해서 웹소켓 기반 채팅 서버를 만들어봅시다. 웹브라우저용 클라이언트는 잘 준비돼 있습니다.
+						</script>
+					</section>
+					<section data-markdown>
+						<script type="text/template">
+						## 웹소켓 (WebSocket)
+
+						* 모던 웹브라우저 대부분이 지원하는 양방향 프로토콜
+						* HTTP를 연결된 다음 WebSocket통신으로 업그레이드
+						* 얼핏 HTTP인 것 같지만 사실상 다른 프로토콜
+
+						### 참고
+
+						* SPDY
+						* HTTP/2
+						</script>
+					</section>
+					<section data-background="img/ex4-2.png" data-background-size="800px">
+					</section>
+
+					<section class="small-code">
+						<h2>
+							<small>src/nettystartup/h4/</small>WebChatServer.java
+						</h2>
+						<pre><code class="java" data-trim contenteditable>
+public class WebChatServer {
+    static String index = System.getProperty("user.dir") + "/res/h4/index.html";
+
+    public static void main(String[] args) throws Exception {
+        NettyStartupUtil.runServer(8040, new ChannelInitializer&lt;SocketChannel&gt;() {
+            @Override
+            public void initChannel(SocketChannel ch) {
+                ChannelPipeline p = ch.pipeline();
+                p.addLast(new HttpServerCodec());
+                p.addLast(new HttpObjectAggregator(65536));
+                p.addLast(new WebSocketHandshakeHandler("/chat", new WebChatHandler()));
+                p.addLast(new HttpStaticFileHandler("/", index));
+                // TODO: [실습4-1] 실습3-2와 마찬가지로 404 응답을 처리하게 합니다.
+            }
+        });
+    }
+}
+						</code></pre>
+					</section>
+
+					<section class="small-code">
+						<h2>
+							WebSocketHandshakeHandler.java
+						</h2>
+						<pre><code class="java" data-trim contenteditable>
+class WebSocketHandshakeHandler extends S..C..I.Handler&lt;FullHttpRequest&gt; {
+    protected void channelRead0(C..H..Context ctx, FullHttpRequest req) throws Exception {
+        ...  handshakeWebSocket(ctx, req); ...
+    }
+
+    private void handshakeWebSocket(C..H..Context ctx, FullHttpRequest req) {
+    	  ...
+        h.handshake(ctx.channel(), req).addListener((ChannelFuture f) -&gt; {
+            // replace the handler when done handshaking
+            ChannelPipeline p = f.channel().pipeline();
+            p.replace(WebSocketHandshakeHandler.class, "wsHandler", wsHandler);
+        }
+    }
+}
+						</code></pre>
+					</section>
+
+					<section class="small-code">
+						<h2>
+							<small>src/nettystartup/h4/</small>WebChatHandler.java
+						</h2>
+						<pre><code class="java" data-trim contenteditable>
+class WebChatHandler extends SimpleChannelInboundHandler&lt;WebSocketFrame&gt; {
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        // TODO: [실습4-2] 파이프라인에 코덱과 핸들러를 추가해서 WebSocket과 ChatServerHandler를 연결합니다.
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
+        ... TextWebSocketFrame만 걸러서 다음 핸들러에 넘기는 코드 ...
+        ctx.fireChannelRead(frame.retain());
+    }
+}
+						</code></pre>
+					</section>
+					<section class="small-code">
+						<h2>
+							<small>src/nettystartup/h4/</small>WebSocketChatCodec.java
+						</h2>
+						<pre><code class="java" data-trim contenteditable>
+class WebSocketChatCodec extends
+        MessageToMessageCodec&lt;TextWebSocketFrame, ChatMessage&gt; {
+    @Override
+    protected void encode(C..H..Context ctx, ChatMessage msg, List&lt;Object&gt; out) throws E.. {
+        out.add(new TextWebSocketFrame(msg.toString()));
+    }
+
+    @Override
+    protected void decode(C..H..Context ctx, TextWebSocketFrame msg, List&lt;Object&gt; out) throws E.. {
+        out.add(ChatMessage.parse(msg.text()));
+    }
+}
+						</code></pre>
+					</section>
+
+				</section>
+
+				<section>
+					<section data-markdown>
+						<script type="text/template">
+						# 도전과제
+
+						> 시간이 더 있다면, 세번째 시간에 개발한 채팅 서버에 TCP 연결로 프록시 처리를 하는 웹소켓 채팅서비스를 만들어봅시다.
+
+						브라우저 <-> 웹소켓 서버 프로세스 <-> 채팅 서버 프로세스
+						</script>
+					</section>
+				</section>
+				<section data-markdown>
+					<script type="text/template">
+					## 참고자료
+					* [SPDY](http://en.wikipedia.org/wiki/SPDY)
+					* [Hello HTTP/2, Goodbye SPDY](http://blog.chromium.org/2015/02/hello-http2-goodbye-spdy-http-is_9.html)
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+					# 감사합니다
+
+					> http://github.com/hatemogi/netty-startup
+
+					### 김대현
+
+					* hatemogi at gmail
+					* http://hatemogi.com
+					* http://twitter.com/hatemogi
+					* http://medium.com/@hatemogi
+					</script>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: false,
+				slideNumber: true,
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, condition: function() { return true || !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-61112360-2', 'auto');
+ga('send', 'pageview');
+
+		</script>
+
+	</body>
+</html>
