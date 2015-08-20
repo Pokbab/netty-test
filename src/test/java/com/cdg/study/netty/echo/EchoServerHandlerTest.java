@@ -14,14 +14,17 @@ public class EchoServerHandlerTest {
 
 	@Test
 	public void echo() {
-		String m = "echo test\n";
-		EmbeddedChannel ch = new EmbeddedChannel(new EchoServerHandler());
-		ByteBuf in = Unpooled.copiedBuffer(m, CharsetUtil.UTF_8);
-		ch.writeInbound(in);
-		ByteBuf r = (ByteBuf)ch.readOutbound();
-		ReferenceCountUtil.releaseLater(r);
-		assertNotNull("응답이 없습니다", r);
-		assertEquals("참조수는 1이어야 합니다", r.refCnt(), 1);
-		assertEquals("수신한 텍스트가 결과로 와야합니다", r.toString(CharsetUtil.UTF_8), m);
+		String msg = "echo test\n";
+		EmbeddedChannel channel = new EmbeddedChannel(new EchoServerHandler());
+		
+		ByteBuf in = Unpooled.copiedBuffer(msg, CharsetUtil.UTF_8);
+		channel.writeInbound(in);
+		
+		ByteBuf out = (ByteBuf)channel.readOutbound();
+		ReferenceCountUtil.releaseLater(out);
+
+		assertNotNull("응답이 없습니다", out);
+		assertEquals("참조수는 1이어야 합니다", out.refCnt(), 1);
+		assertEquals("수신한 텍스트가 결과로 와야합니다", out.toString(CharsetUtil.UTF_8), msg);
 	}
 }

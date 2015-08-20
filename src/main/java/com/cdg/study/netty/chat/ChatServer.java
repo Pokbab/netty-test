@@ -16,10 +16,11 @@ public final class ChatServer {
         NettyStartupUtil.runServer(8030, new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(new LineBasedFrameDecoder(1024, true, true))
-                        .addLast(new StringDecoder(CharsetUtil.UTF_8), new StringEncoder(CharsetUtil.UTF_8))
-                        .addLast(new ChatMessageCodec(), new LoggingHandler(LogLevel.INFO))
-                        .addLast(new ChatServerHandler());
+                ch.pipeline()
+                	.addLast(new LineBasedFrameDecoder(1024, true, true))	// 줄단위로 끊는 디코더
+                	.addLast(new StringDecoder(CharsetUtil.UTF_8), new StringEncoder(CharsetUtil.UTF_8))	// 
+            		.addLast(new ChatMessageCodec(), new LoggingHandler(LogLevel.INFO))
+        			.addLast(new ChatServerHandler());
             }
         });
     }

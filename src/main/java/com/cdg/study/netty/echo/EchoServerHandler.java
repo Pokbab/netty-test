@@ -18,20 +18,19 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class EchoServerHandler extends ChannelInboundHandlerAdapter {
 	@Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        // TODO: [실습1-2] 받은대로 응답하는 코드를 한 줄 작성합니다. release는 필요하지 않습니다.
-		ctx.write(msg); // (1)
-        ctx.flush(); // (2)
+    public void channelRead(ChannelHandlerContext context, Object msg) {
+		context.write(msg);
+        context.flush();
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        ctx.flush();
+    public void channelReadComplete(ChannelHandlerContext context) {
+        context.flush();
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(ChannelHandlerContext context, Throwable cause) {
         cause.printStackTrace();
-        ctx.close();
+        context.close();
     }
 }

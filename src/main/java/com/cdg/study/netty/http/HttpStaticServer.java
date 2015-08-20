@@ -16,11 +16,10 @@ public class HttpStaticServer {
             @Override
             public void initChannel(SocketChannel ch) {
                 ChannelPipeline p = ch.pipeline();
-                p.addLast(new HttpServerCodec());
-                p.addLast(new HttpObjectAggregator(65536));
-                p.addLast(new HttpStaticFileHandler("/", index));
-                // TODO: [실습2-2] HttpNotFoundHandler를 써서 404응답을 처리합니다.
-
+                p.addLast(new HttpServerCodec());					// http 파싱
+                p.addLast(new HttpObjectAggregator(65536));			// 본문 합쳐주는거 64k
+                p.addLast(new HttpStaticFileHandler("/", index));	// 
+                p.addLast(new HttpNotFoundHandler());
             }
         });
     }

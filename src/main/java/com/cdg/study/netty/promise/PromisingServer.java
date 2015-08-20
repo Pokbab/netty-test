@@ -14,9 +14,9 @@ public final class PromisingServer {
             @Override
             public void initChannel(SocketChannel ch) {
                 ch.pipeline()
-                        .addLast(new LineBasedFrameDecoder(1024))
-                        .addLast(new StringDecoder(), new StringEncoder())
-                        .addLast(new PromisingServerHandler());
+                    .addLast(new LineBasedFrameDecoder(1024))
+                    .addLast(new StringDecoder(), new StringEncoder())
+                    .addLast(new PromisingServerHandler());
             }
         });
     }

@@ -1,5 +1,8 @@
 package com.cdg.study.netty.webchat;
 
+import com.cdg.study.netty.chat.ChatServerHandler;
+import com.cdg.study.netty.http.HttpStaticFileHandler;
+
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -11,9 +14,10 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 class WebChatHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(ChannelHandlerContext context) throws Exception {
         // TODO: [실습4-2] 파이프라인에 코덱과 핸들러를 추가해서 WebSocket과 ChatServerHandler를 연결합니다.
-
+    	context.pipeline().addLast(new WebSocketChatCodec(), new ChatServerHandler());
+    	context.pipeline().remove(HttpStaticFileHandler.class);
     }
 
     // 채널 파이프라인에서 현재핸들러가 등록된 이름을 구합니다.
